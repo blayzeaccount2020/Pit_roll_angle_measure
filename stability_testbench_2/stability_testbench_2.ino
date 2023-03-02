@@ -15,8 +15,6 @@ int pitch_angle_plus=0;
 int pitch_angle_minus=0;
 int roll_angle_plus=0;
 int roll_angle_minus=0;
-
-
 float roll_angle_highpass=0;
 float roll_angle_highpass1=0;
 float roll_angle_highpass_filter_out=0;
