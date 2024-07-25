@@ -2,10 +2,9 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include <Servo.h>
+#include <EEPROM.h>
 
 Adafruit_MPU6050 mpu;
-Servo roll;
-Servo pitch;
 float roll_angle=0;
 float pitch_angle=0;
 float motor_roll_angle=90;
@@ -15,6 +14,8 @@ int pitch_angle_plus=0;
 int pitch_angle_minus=0;
 int roll_angle_plus=0;
 int roll_angle_minus=0;
+
+
 float roll_angle_highpass=0;
 float roll_angle_highpass1=0;
 float roll_angle_highpass_filter_out=0;
@@ -38,7 +39,8 @@ float corrected_x_acceleration;
 float corrected_y_acceleration;
 float corrected_z_acceleration;
 float tau = 1/(2*PI*1);
-int count=0;
+volatile int count=0;
+int past_count=0;
 int sample_number=50;
 int loop_delay=50;
 float mag_yz_plane=0;
@@ -51,18 +53,34 @@ float pitch_angle_original=0;
 float past_time=0;
 float current_time=0;
 
-int left_pin_roll=2;
-int right_pin_roll=3;
-int left_pin_pitch=4;
-int right_pin_pitch=5;
+int left_pin_roll=3;
+int right_pin_roll=4;
+
+int pwmpin1 = 10;
+int pwmpin2 = 11;
+
+int zero_point_set=7;
+int mem_address = 0; //address where info is supposed to be stored
+int i;
+
+float past_time_count=0;
+float current_time_count=0;
+
+int linear_actuator_input = 2;
+
+int read_left_pin=8;
+int read_right_pin=9;
+
+int analogPin = A0;
+
+float relative_angle1=0;
+float relative_angle2=0;
 
 void setup() {
- roll.attach(8);
- pitch.attach(9);
- //setting angle
- roll.write(motor_roll_angle);
- pitch.write(motor_pitch_angle);
- delay(1000);
+pinMode(left_pin_roll, OUTPUT);
+pinMode(right_pin_roll, OUTPUT);
+pinMode(read_left_pin, INPUT);
+pinMode(read_right_pin, INPUT);
  Serial.begin(115200);
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
@@ -141,7 +159,16 @@ void setup() {
   delay(100);
 
  
+    for(i = 0; (i < EEPROM.length())&&(EEPROM.read(i)==255); i+=1){
+    }
+      mem_address = i;
+    if(mem_address >= EEPROM.length()-1){
+      mem_address = 0;
+    }
 
+    count = (EEPROM.read(mem_address)*100)+(EEPROM.read(mem_address+1));
+
+    attachInterrupt(digitalPinToInterrupt(linear_actuator_input),countSteps,RISING);
 
 }
 
@@ -175,92 +202,86 @@ void loop() {
   roll_angle_lowpass_filter_out=(roll_angle_lowpass/((tau*100)+1))+(((tau*100)/(((tau*100)+1)))*roll_angle_lowpass_filter_out);
   pitch_angle_lowpass_filter_out=(pitch_angle_lowpass/((tau*100)+1))+(((tau*100)/(((tau*100)+1)))*pitch_angle_lowpass_filter_out);
 
-  //print statements for testing purposes. Only should be uncommented for testing.
-  //Serial.print("roll_angle_unfiltered:");
-  //Serial.print(roll_angle_lowpass_filter_out + roll_angle_highpass_filter_out+90);
-  //Serial.print(",");
-  //Serial.print("pitch_angle_comp_filtered:");
-  //Serial.print(pitch_angle_lowpass_filter_out + pitch_angle_highpass_filter_out+90);
-  //Serial.print(",");
-  //Serial.print("motor_pitch_angle:");
-  //Serial.print(motor_pitch_angle);
-  //Serial.print(",");
-  //Serial.print("motor_roll_angle:");
-  //Serial.print(motor_roll_angle);
-  //Serial.print(",");
-  //Serial.print("Sample_Rate:");
-  //Serial.println(sample_rate);
-  //Serial.print(",");
-  //Serial.print("pitch_angle_comp_filtered:");
-  //Serial.println(pitch_angle_lowpass_filter_out + pitch_angle_highpass_filter_out);
-
   //add 90 degrees to angles to orient the numbers for the servo motors.
   roll_angle=roll_angle_lowpass_filter_out + roll_angle_highpass_filter_out+90;
   pitch_angle=pitch_angle_lowpass_filter_out + pitch_angle_highpass_filter_out+90;
+  Serial.println(roll_angle);
+  Serial.println(pitch_angle);
+  Serial.println("end");
   //set switch values to increase or decreae pitch and roll to keep be level.
   if(roll_angle<=89){
-     roll_angle_plus=1;
-     roll_angle_minus=0;
+     digitalWrite(left_pin_roll, HIGH);
+     digitalWrite(right_pin_roll, LOW);
+     relative_angle1=100-roll_angle;
+     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
   }else{
     if(roll_angle>=91){
-     roll_angle_plus=0;
-     roll_angle_minus=1;
+     digitalWrite(left_pin_roll, LOW);
+     digitalWrite(right_pin_roll, HIGH);
+     relative_angle2=roll_angle-80;
+     analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
     }else {
-     roll_angle_plus=0;
-     roll_angle_minus=0;
+     digitalWrite(left_pin_roll, LOW);
+     digitalWrite(right_pin_roll, LOW);
+     analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
     }
   }
-
-  if(pitch_angle<=89){
-     pitch_angle_plus=0;
-     pitch_angle_minus=1;
-  }else{
-    if(pitch_angle>=91){
-     pitch_angle_plus=1;
-     pitch_angle_minus=0;
-    }else {
-     pitch_angle_plus=0;
-     pitch_angle_minus=0;
+  if(analogRead(analogPin) >= 210){
+    if(count>295){
+     digitalWrite(left_pin_roll, HIGH);
+     digitalWrite(right_pin_roll, LOW);
+     analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
+    }else{
+      if(count<285){
+       digitalWrite(left_pin_roll, LOW);
+      digitalWrite(right_pin_roll, HIGH);
+      analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
+      }else{
+      digitalWrite(left_pin_roll, LOW);
+      digitalWrite(right_pin_roll, LOW);
+      analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
+      }
     }
   }
+  //this code makes sure that the count variable is added to memory every time it is changed. 
+  if(count != past_count){
+        past_count = count;
+        EEPROM.update(mem_address,(count/100));
+        EEPROM.update(mem_address+1,count-((count/100)*100));
+    if(mem_address != 0){
+       EEPROM.update(mem_address-1,255);
+    }
+    mem_address+=1;
+    if(mem_address >= (EEPROM.length()-1)){
+       mem_address = 0;
+    }
+  }
+  //This code makes sure that the count variable can be reset if it ever becomes too far off. 
+  if(digitalRead(zero_point_set) == HIGH){
+    count = 0;
+  }
+  //these print statements print out important parameters that allow the code to be troubleshooted if needed. 
+  Serial.println("memory address");
+  Serial.println(mem_address);
+  Serial.println("count");
+  Serial.println(count);
+  Serial.println("current_time-past_time");
+  Serial.println(current_time-past_time);
+  Serial.println("current_time");
+  Serial.println(current_time);
 
-  //adjust the angles of the pitch and roll motors.
-  if((roll_angle_plus == 1)&&(roll_angle_minus == 0)){
-    motor_roll_angle = motor_roll_angle + 1;
-  }
-  if((roll_angle_plus == 0)&&(roll_angle_minus == 1)){
-    motor_roll_angle = motor_roll_angle - 1;
-  }
-    if((roll_angle_plus == 0)&&(roll_angle_minus == 0)){
-    motor_roll_angle = motor_roll_angle;
-  }
-  
-
-  if((pitch_angle_plus == 1)&&(pitch_angle_minus == 0)){
-    motor_pitch_angle = motor_pitch_angle + 1;
-  }
-  if((pitch_angle_plus == 0)&&(pitch_angle_minus == 1)){
-    motor_pitch_angle = motor_pitch_angle - 1;
-  }
-    if((pitch_angle_plus == 0)&&(pitch_angle_minus == 0)){
-    motor_pitch_angle = motor_pitch_angle;
-  }
-  //clamp motor angles to in between 0 and 180 degrees.
-  if(motor_roll_angle>180){
-    motor_roll_angle=180;
-  }
-  if(motor_roll_angle<0){
-    motor_roll_angle=0;
-  }
-  if(motor_pitch_angle>180){
-    motor_pitch_angle=180;
-  }
-  if(motor_pitch_angle<0){
-    motor_pitch_angle=0;
-  }
-  roll.write(motor_roll_angle);
-  pitch.write(motor_pitch_angle);
-
-  //add delay to keep loop stable. 
   delay(loop_delay);
+}
+
+void countSteps(void) {
+    current_time_count=millis();
+   if(current_time_count-past_time_count >= 9.0){
+     if(digitalRead(read_left_pin)==HIGH){
+       count--;
+     }
+     if(digitalRead(read_right_pin)==HIGH){
+       count++;
+     }
+    past_time_count = current_time_count;
+  }
 }
