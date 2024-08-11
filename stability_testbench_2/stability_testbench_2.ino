@@ -53,8 +53,8 @@ float pitch_angle_original=0;
 float past_time=0;
 float current_time=0;
 
-int left_pin_roll=3;
-int right_pin_roll=4;
+int left_pin_roll=4; //these may need to be switched around in the if statements below. 
+int right_pin_roll=3;
 
 int pwmpin1 = 10;
 int pwmpin2 = 11;
@@ -68,8 +68,11 @@ float current_time_count=0;
 
 int linear_actuator_input = 2;
 
-int read_left_pin=8;
-int read_right_pin=9;
+//int read_left_pin=8;
+//int read_right_pin=9;
+int manual_override_pin = 6;
+int move_left_manual = 8;
+int move_right_manual = 9; //the code is configured that extending the actuator makes it go right, and retracting makes it go left. This may need to be reversed.
 
 int analogPin = A0;
 
@@ -79,8 +82,11 @@ float relative_angle2=0;
 void setup() {
 pinMode(left_pin_roll, OUTPUT);
 pinMode(right_pin_roll, OUTPUT);
-pinMode(read_left_pin, INPUT);
-pinMode(read_right_pin, INPUT);
+pinMode(manual_override_pin, INPUT);
+pinMode(move_left_manual, INPUT);
+pinMode(move_right_manual, INPUT);
+//pinMode(read_left_pin, INPUT);
+//pinMode(read_right_pin, INPUT);
  Serial.begin(115200);
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
@@ -208,6 +214,7 @@ void loop() {
   Serial.println(roll_angle);
   Serial.println(pitch_angle);
   Serial.println("end");
+if(digitalRead(manual_override_pin)==LOW){
   //set switch values to increase or decreae pitch and roll to keep be level.
   if(roll_angle<=89){
      digitalWrite(left_pin_roll, HIGH);
@@ -226,6 +233,30 @@ void loop() {
      analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
     }
   }
+}else{
+  if(digitalRead(move_left_manual)==HIGH){
+     digitalWrite(left_pin_roll, HIGH);
+     digitalWrite(right_pin_roll, LOW);
+     relative_angle1=100-roll_angle;
+     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+  }
+  else{
+     digitalWrite(left_pin_roll, LOW);
+     digitalWrite(right_pin_roll, LOW);
+     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+  }
+  if(digitalRead(move_right_manual)==HIGH){
+     digitalWrite(left_pin_roll, LOW);
+     digitalWrite(right_pin_roll, HIGH);
+     relative_angle2=roll_angle-80; //investigate
+     analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
+  }
+  else{
+     digitalWrite(left_pin_roll, LOW);
+     digitalWrite(right_pin_roll, LOW);
+     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+  }
+}
   if(analogRead(analogPin) >= 210){
     if(count>295){
      digitalWrite(left_pin_roll, HIGH);
