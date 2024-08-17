@@ -70,6 +70,7 @@ int linear_actuator_input = 2;
 
 //int read_left_pin=8;
 //int read_right_pin=9;
+int engage_centering = 5;
 int manual_override_pin = 6;
 int move_left_manual = 8;
 int move_right_manual = 9; //the code is configured that extending the actuator makes it go right, and retracting makes it go left. This may need to be reversed.
@@ -214,6 +215,7 @@ void loop() {
   Serial.println(roll_angle);
   Serial.println(pitch_angle);
   Serial.println("end");
+if(digitalRead(engage_centering)==LOW){
 if(digitalRead(manual_override_pin)==LOW){
   //set switch values to increase or decreae pitch and roll to keep be level.
   if(roll_angle<=89){
@@ -256,9 +258,8 @@ if(digitalRead(manual_override_pin)==LOW){
      digitalWrite(right_pin_roll, LOW);
      analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
   }
-}
-  if(analogRead(analogPin) >= 210){
-    if(count>295){
+}else{
+   if(count>295){                                      \\295 and 285 are the counts when the linear actuator is near the middle of the its stroke. These values may need to be fine tuned later.
      digitalWrite(left_pin_roll, HIGH);
      digitalWrite(right_pin_roll, LOW);
      analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
@@ -272,8 +273,25 @@ if(digitalRead(manual_override_pin)==LOW){
       digitalWrite(right_pin_roll, LOW);
       analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
       }
-    }
+   }
   }
+//  if(analogRead(analogPin) >= 210){
+  //  if(count>295){
+ //    digitalWrite(left_pin_roll, HIGH);
+ //    digitalWrite(right_pin_roll, LOW);
+  //   analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
+  //  }else{
+   //   if(count<285){
+   //    digitalWrite(left_pin_roll, LOW);
+   //   digitalWrite(right_pin_roll, HIGH);
+  //    analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
+   //   }else{
+   //   digitalWrite(left_pin_roll, LOW);
+   //   digitalWrite(right_pin_roll, LOW);
+  //    analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
+ //     }
+  //  }
+ // }
   //this code makes sure that the count variable is added to memory every time it is changed. 
   if(count != past_count){
         past_count = count;
@@ -287,10 +305,11 @@ if(digitalRead(manual_override_pin)==LOW){
        mem_address = 0;
     }
   }
+}
   //This code makes sure that the count variable can be reset if it ever becomes too far off. 
-  if(digitalRead(zero_point_set) == HIGH){
-    count = 0;
-  }
+  //if(digitalRead(zero_point_set) == HIGH){
+  //  count = 0;
+  //}
   //these print statements print out important parameters that allow the code to be troubleshooted if needed. 
   Serial.println("memory address");
   Serial.println(mem_address);
