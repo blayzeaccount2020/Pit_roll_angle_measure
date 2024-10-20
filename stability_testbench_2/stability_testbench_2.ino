@@ -215,8 +215,8 @@ void loop() {
   Serial.println(roll_angle);
   Serial.println(pitch_angle);
   Serial.println("end");
-if(digitalRead(engage_centering)==LOW){
-if(digitalRead(manual_override_pin)==LOW){
+if(digitalRead(engage_centering)==HIGH){
+if(digitalRead(manual_override_pin)==HIGH){
   //set switch values to increase or decreae pitch and roll to keep be level.
   if(roll_angle<=89){
      digitalWrite(left_pin_roll, HIGH);
@@ -236,7 +236,7 @@ if(digitalRead(manual_override_pin)==LOW){
     }
   }
 }else{
-  if(digitalRead(move_left_manual)==HIGH){
+  if(digitalRead(move_left_manual)==LOW){
      digitalWrite(left_pin_roll, HIGH);
      digitalWrite(right_pin_roll, LOW);
      relative_angle1=100-roll_angle;
@@ -247,7 +247,7 @@ if(digitalRead(manual_override_pin)==LOW){
      digitalWrite(right_pin_roll, LOW);
      analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
   }
-  if(digitalRead(move_right_manual)==HIGH){
+  if(digitalRead(move_right_manual)==LOW){
      digitalWrite(left_pin_roll, LOW);
      digitalWrite(right_pin_roll, HIGH);
      relative_angle2=roll_angle-80; //investigate
