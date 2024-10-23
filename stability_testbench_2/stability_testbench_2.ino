@@ -216,50 +216,52 @@ void loop() {
   Serial.println(pitch_angle);
   Serial.println("end");
 if(digitalRead(engage_centering)==HIGH){
-if(digitalRead(manual_override_pin)==HIGH){
-  //set switch values to increase or decreae pitch and roll to keep be level.
-  if(roll_angle<=89){
-     digitalWrite(left_pin_roll, HIGH);
-     digitalWrite(right_pin_roll, LOW);
-     relative_angle1=100-roll_angle;
-     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
-  }else{
-    if(roll_angle>=91){
-     digitalWrite(left_pin_roll, LOW);
-     digitalWrite(right_pin_roll, HIGH);
-     relative_angle2=roll_angle-80;
-     analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
-    }else {
-     digitalWrite(left_pin_roll, LOW);
-     digitalWrite(right_pin_roll, LOW);
-     analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
+    if(digitalRead(manual_override_pin)==HIGH){
+      //set switch values to increase or decreae pitch and roll to keep be level.
+      if(roll_angle<=89){
+         digitalWrite(left_pin_roll, HIGH);
+         digitalWrite(right_pin_roll, LOW);
+         relative_angle1=100-roll_angle;
+         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+      }else{
+        if(roll_angle>=91){
+         digitalWrite(left_pin_roll, LOW);
+         digitalWrite(right_pin_roll, HIGH);
+         relative_angle2=roll_angle-80;
+         analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
+        }else {
+         digitalWrite(left_pin_roll, LOW);
+         digitalWrite(right_pin_roll, LOW);
+         analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
+        }
+      }
+    }else{
+      if(digitalRead(move_left_manual)==LOW){
+         digitalWrite(left_pin_roll, HIGH);
+         digitalWrite(right_pin_roll, LOW);
+         relative_angle1=100-roll_angle;
+         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+      }
+      else{
+         digitalWrite(left_pin_roll, LOW);
+         digitalWrite(right_pin_roll, LOW);
+         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+      }
+      if(digitalRead(move_right_manual)==LOW){
+         digitalWrite(left_pin_roll, LOW);
+         digitalWrite(right_pin_roll, HIGH);
+         relative_angle2=roll_angle-80; //investigate
+         analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
+      }
+      else{
+         digitalWrite(left_pin_roll, LOW);
+         digitalWrite(right_pin_roll, LOW);
+         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
     }
   }
-}else{
-  if(digitalRead(move_left_manual)==LOW){
-     digitalWrite(left_pin_roll, HIGH);
-     digitalWrite(right_pin_roll, LOW);
-     relative_angle1=100-roll_angle;
-     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
-  }
-  else{
-     digitalWrite(left_pin_roll, LOW);
-     digitalWrite(right_pin_roll, LOW);
-     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
-  }
-  if(digitalRead(move_right_manual)==LOW){
-     digitalWrite(left_pin_roll, LOW);
-     digitalWrite(right_pin_roll, HIGH);
-     relative_angle2=roll_angle-80; //investigate
-     analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
-  }
-  else{
-     digitalWrite(left_pin_roll, LOW);
-     digitalWrite(right_pin_roll, LOW);
-     analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
-  }
-}else{
-   if(count>295){                                      \\295 and 285 are the counts when the linear actuator is near the middle of the its stroke. These values may need to be fine tuned later.
+}
+else{
+   if(count>295){                                      //295 and 285 are the counts when the linear actuator is near the middle of the its stroke. These values may need to be fine tuned later.
      digitalWrite(left_pin_roll, HIGH);
      digitalWrite(right_pin_roll, LOW);
      analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
@@ -305,7 +307,7 @@ if(digitalRead(manual_override_pin)==HIGH){
        mem_address = 0;
     }
   }
-}
+
   //This code makes sure that the count variable can be reset if it ever becomes too far off. 
   //if(digitalRead(zero_point_set) == HIGH){
   //  count = 0;
@@ -326,10 +328,10 @@ if(digitalRead(manual_override_pin)==HIGH){
 void countSteps(void) {
     current_time_count=millis();
    if(current_time_count-past_time_count >= 9.0){
-     if(digitalRead(read_left_pin)==HIGH){
+     if(digitalRead(left_pin_roll)==HIGH){
        count--;
      }
-     if(digitalRead(read_right_pin)==HIGH){
+     if(digitalRead(right_pin_roll)==HIGH){
        count++;
      }
     past_time_count = current_time_count;
