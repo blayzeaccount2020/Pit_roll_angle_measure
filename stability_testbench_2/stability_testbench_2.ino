@@ -83,6 +83,7 @@ float relative_angle2=0;
 void setup() {
 pinMode(left_pin_roll, OUTPUT);
 pinMode(right_pin_roll, OUTPUT);
+pinMode(pwmpin1,OUTPUT);
 pinMode(manual_override_pin, INPUT);
 pinMode(move_left_manual, INPUT);
 pinMode(move_right_manual, INPUT);
