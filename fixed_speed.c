@@ -2,113 +2,105 @@ int motor_pin = 10; // -> Operation Mode
 int extend_pin = 3; // -> IN A (Hardware PWM)
 int retract_pin = 4; // -> IN B
 
+int extend_sense = 8;
+int retract_sense = 9;
+
+// It's definitely this one, Blayze
+
 typedef enum
 {
-	MOTOR_OFF = (0b00),
-	MOTOR_EXTEND = (0b01),
-	MOTOR_RETRACT = (0b10),
-	MOTOR_BRAKE = (0b11),
+  MOTOR_OFF = (0b00),
+  MOTOR_EXTEND = (0b01),
+  MOTOR_RETRACT = (0b10),
+  MOTOR_BRAKE = (0b11),
 } direction_t;
 
-typedef struct __attribute__((packed))
+void set_motor(direction_t dir)
 {
-	union
-	{
-		struct
-		{
-			int extend: 1;
-			int retract: 1;
-			int: 6;
-		};
-		struct
-		{
-			direction_t value: 2;
-			direction_t: 6;
-		};
-	};
-} motor_t;
+  static direction_t last_direction = MOTOR_OFF;
 
-motor_t motor = {0};
+  // If flipping directions,
+  if (((dir == MOTOR_EXTEND) && (last_dir == MOTOR_RETRACT)) || ((dir == MOTOR_RETRACT) && (last_dir == MOTOR_EXTEND))
+  {
+    // Allow the motor to stop for a short period of time
+    digitalWrite(extend_pin, LOW);
+    digitalWrite(retract_pin, LOW);
+    delay(100);
+  }
 
-void set_motor()
-{
-	switch (motor.value)
-	{
-		case MOTOR_OFF:
-		{
-			// Motor has been stopped => do nothing
-			break;
-		}
+  switch (dir)
+  {
+    case MOTOR_OFF:
+    {
+      digitalWrite(extend_pin, LOW);
+      digitalWrite(retract_pin, LOW);
+      break;
+    }
 
-		case MOTOR_EXTEND:
-		{
-			// Switch motor direction
-			motor.value = MOTOR_RETRACT;
+    case MOTOR_EXTEND:
+    {
+      digitalWrite(extend_pin, HIGH);
+      digitalWrite(retract_pin, LOW);
+      break;
+    }
 
-			// motor.value = 0b10
-			// motor.extend = 0
-			// motor.retract = 1
+    case MOTOR_RETRACT:
+    {
+      digitalWrite(extend_pin, LOW);
+      digitalWrite(retract_pin, HIGH);
+      break;
+    }
 
-			break;
-		}
-
-		case MOTOR_RETRACT:
-		{
-			// Switch motor direction
-			motor.value = MOTOR_EXTEND;
-
-			// motor.value = 0b01
-			// motor.extend = 1
-			// motor.retract = 0
-			break;
-		}
-
-		case MOTOR_BRAKE:
-		{
-			// Motor has been stopped => do nothing
-			break;
-		}
-	}
-
-	digitalWrite(extend_pin, motor.extend);
-	digitalWrite(retract_pin, motor.retract);
+    case MOTOR_BRAKE:
+    {
+      digitalWrite(extend_pin, HIGH);
+      digitalWrite(retract_pin, HIGH);
+      break;
+    }
+  }
 }
 
 void setup()
 {
-	// Set Motor pin to low to configure IN/IN mode
-	digitalWrite(motor_pin, LOW);
+  // Set Motor pin to low to configure IN/IN mode
+  digitalWrite(motor_pin, LOW);
 
-	// Set INA / INB so the motor is off
-	digitalWrite(extend_pin, LOW);
-	digitalWrite(retract_pin, LOW);
+  // Set INA / INB so the motor is off
+  digitalWrite(extend_pin, LOW);
+  digitalWrite(retract_pin, LOW);
 
-	// Set Motor, Extend, and Retract as outputs
-	pinMode(motor_pin, OUTPUT);
-	pinMode(extend_pin, OUTPUT);
-	pinMode(retract_pin, OUTPUT);
+  // Set Motor, Extend, and Retract as outputs
+  pinMode(motor_pin, OUTPUT);
+  pinMode(extend_pin, OUTPUT);
+  pinMode(retract_pin, OUTPUT);
 
-	// Start motor movement
-	motor.value = MOTOR_EXTEND;
+  pinMode(extend_sense, INPUT);
+  pinMode(retract_sense, INPUT);
 }
 
 void loop()
 {
-	// Extend motor
-	set_motor();
-	delayMilliseconds(900);
+  // Extend motor
+  //set_motor(MOTOR_EXTEND);
+  //delay(900);
 
-	// Gracefully stop motor
-	motor.value = MOTOR_BRAKE;
-	set_motor();
-	delayMilliseconds(100);
+  // Retract motor
+  //set_motor(MOTOR_RETRACT);
+  //delay(900);
 
-	// Retract motor
-	set_motor();
-	delayMilliseconds(900);
+  int extend = digitalRead(extend_sense);
+  int retract = digitalRead(retract_sense);
 
-	// Gracefully stop motor
-	motor.value = MOTOR_BRAKE;
-	set_motor();
-	delayMilliseconds(100);
+  if (extend == LOW)
+  {
+    set_motor(MOTOR_EXTEND);
+  }
+  else if (retract == LOW)
+  {
+    set_motor(MOTOR_RETRACT);
+  }
+  else
+  {
+    set_motor(MOTOR_OFF);
+  }
 }
