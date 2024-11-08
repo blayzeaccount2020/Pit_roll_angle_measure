@@ -80,6 +80,59 @@ int analogPin = A0;
 float relative_angle1=0;
 float relative_angle2=0;
 
+typedef enum
+{
+  MOTOR_OFF = (0b00),
+  MOTOR_EXTEND = (0b01),
+  MOTOR_RETRACT = (0b10),
+  MOTOR_BRAKE = (0b11),
+} direction_t;
+
+void set_motor(direction_t dir)
+{
+  static direction_t last_direction = MOTOR_OFF;
+
+  // If flipping directions,
+  if (((dir == MOTOR_EXTEND) && (last_dir == MOTOR_RETRACT)) || ((dir == MOTOR_RETRACT) && (last_dir == MOTOR_EXTEND))
+  {
+    // Allow the motor to stop for a short period of time
+    digitalWrite(extend_pin, LOW);
+    digitalWrite(retract_pin, LOW);
+    delay(100);
+  }
+
+  switch (dir)
+  {
+    case MOTOR_OFF:
+    {
+      digitalWrite(extend_pin, LOW);
+      digitalWrite(retract_pin, LOW);
+      break;
+    }
+
+    case MOTOR_EXTEND:
+    {
+      digitalWrite(extend_pin, HIGH);
+      digitalWrite(retract_pin, LOW);
+      break;
+    }
+
+    case MOTOR_RETRACT:
+    {
+      digitalWrite(extend_pin, LOW);
+      digitalWrite(retract_pin, HIGH);
+      break;
+    }
+
+    case MOTOR_BRAKE:
+    {
+      digitalWrite(extend_pin, HIGH);
+      digitalWrite(retract_pin, HIGH);
+      break;
+    }
+  }
+}
+
 void setup() {
 pinMode(left_pin_roll, OUTPUT);
 pinMode(right_pin_roll, OUTPUT);
@@ -216,48 +269,49 @@ void loop() {
   Serial.println(roll_angle);
   Serial.println(pitch_angle);
   Serial.println("end");
+  digitalWrite(pwmpin1,LOW);
 if(digitalRead(engage_centering)==HIGH){
     if(digitalRead(manual_override_pin)==HIGH){
       //set switch values to increase or decreae pitch and roll to keep be level.
       if(roll_angle<=89){
          digitalWrite(left_pin_roll, HIGH);
          digitalWrite(right_pin_roll, LOW);
-         relative_angle1=100-roll_angle;
-         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+        // relative_angle1=100-roll_angle;
+        // analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
       }else{
         if(roll_angle>=91){
          digitalWrite(left_pin_roll, LOW);
          digitalWrite(right_pin_roll, HIGH);
-         relative_angle2=roll_angle-80;
-         analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
+        // relative_angle2=roll_angle-80;
+        // analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
         }else {
          digitalWrite(left_pin_roll, LOW);
          digitalWrite(right_pin_roll, LOW);
-         analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
+         //analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
         }
       }
     }else{
       if(digitalRead(move_left_manual)==LOW){
          digitalWrite(left_pin_roll, HIGH);
          digitalWrite(right_pin_roll, LOW);
-         relative_angle1=100-roll_angle;
-         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+        // relative_angle1=100-roll_angle;
+        // analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
       }
       else{
          digitalWrite(left_pin_roll, LOW);
          digitalWrite(right_pin_roll, LOW);
-         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+         //analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
       }
       if(digitalRead(move_right_manual)==LOW){
          digitalWrite(left_pin_roll, LOW);
          digitalWrite(right_pin_roll, HIGH);
-         relative_angle2=roll_angle-80; //investigate
-         analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
+         //relative_angle2=roll_angle-80; //investigate
+        // analogWrite(pwmpin1,map((3.7*relative_angle2)/((0.041*relative_angle2)+1), 0, 90, 0, 255));
       }
       else{
          digitalWrite(left_pin_roll, LOW);
          digitalWrite(right_pin_roll, LOW);
-         analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
+        // analogWrite(pwmpin1,map((3.7*relative_angle1)/((0.041*relative_angle1)+1), 0, 90, 0, 255));
     }
   }
 }
@@ -265,16 +319,16 @@ else{
    if(count>295){                                      //295 and 285 are the counts when the linear actuator is near the middle of the its stroke. These values may need to be fine tuned later.
      digitalWrite(left_pin_roll, HIGH);
      digitalWrite(right_pin_roll, LOW);
-     analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
+     //analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
     }else{
       if(count<285){
        digitalWrite(left_pin_roll, LOW);
       digitalWrite(right_pin_roll, HIGH);
-      analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
+     // analogWrite(pwmpin1,map(45, 0, 90, 0, 255));
       }else{
       digitalWrite(left_pin_roll, LOW);
       digitalWrite(right_pin_roll, LOW);
-      analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
+     // analogWrite(pwmpin1,map(0, 0, 90, 0, 255));
       }
    }
   }
