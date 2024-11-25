@@ -56,7 +56,7 @@ float current_time=0;
 int left_pin_roll=4; //these may need to be switched around in the if statements below. 
 int right_pin_roll=3;
 
-int pwmpin1 = 10;
+int motor_pin = 10;
 int pwmpin2 = 11;
 
 int zero_point_set=7;
@@ -93,11 +93,11 @@ void set_motor(direction_t dir)
   static direction_t last_direction = MOTOR_OFF;
 
   // If flipping directions,
-  if (((dir == MOTOR_EXTEND) && (last_dir == MOTOR_RETRACT)) || ((dir == MOTOR_RETRACT) && (last_dir == MOTOR_EXTEND))
+  if (((dir == MOTOR_EXTEND) && (last_direction == MOTOR_RETRACT)) || ((dir == MOTOR_RETRACT) && (last_direction == MOTOR_EXTEND)))
   {
     // Allow the motor to stop for a short period of time
-    digitalWrite(extend_pin, LOW);
-    digitalWrite(retract_pin, LOW);
+    digitalWrite(right_pin_roll, LOW);
+    digitalWrite(left_pin_roll, LOW);
     delay(100);
   }
 
@@ -105,38 +105,45 @@ void set_motor(direction_t dir)
   {
     case MOTOR_OFF:
     {
-      digitalWrite(extend_pin, LOW);
-      digitalWrite(retract_pin, LOW);
+      digitalWrite(right_pin_roll, LOW);
+      digitalWrite(left_pin_roll, LOW);
       break;
     }
 
     case MOTOR_EXTEND:
     {
-      digitalWrite(extend_pin, HIGH);
-      digitalWrite(retract_pin, LOW);
+      digitalWrite(right_pin_roll, HIGH);
+      digitalWrite(left_pin_roll, LOW);
       break;
     }
 
     case MOTOR_RETRACT:
     {
-      digitalWrite(extend_pin, LOW);
-      digitalWrite(retract_pin, HIGH);
+      digitalWrite(right_pin_roll, LOW);
+      digitalWrite(left_pin_roll, HIGH);
       break;
     }
 
     case MOTOR_BRAKE:
     {
-      digitalWrite(extend_pin, HIGH);
-      digitalWrite(retract_pin, HIGH);
+      digitalWrite(right_pin_roll, HIGH);
+      digitalWrite(left_pin_roll, HIGH);
       break;
     }
   }
 }
 
 void setup() {
+// Set Motor pin to low to configure IN/IN mode
+digitalWrite(motor_pin, LOW);
+
+// Set INA / INB so the motor is off
+digitalWrite(right_pin_roll, LOW);
+digitalWrite(left_pin_roll, LOW);
+  
 pinMode(left_pin_roll, OUTPUT);
 pinMode(right_pin_roll, OUTPUT);
-pinMode(pwmpin1,OUTPUT);
+pinMode(motor_pin,OUTPUT);
 pinMode(manual_override_pin, INPUT);
 pinMode(move_left_manual, INPUT);
 pinMode(move_right_manual, INPUT);
